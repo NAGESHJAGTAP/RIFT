@@ -1,18 +1,9 @@
-import { Server } from 'socket.io';
-import { io as socketIo } from '../server.js'; // Re-exported from server.js
-
 /**
  * Simple wrapper around Socket.io for consent notifications.
  */
 class SocketService {
   constructor() {
-    this.io = socketIo; // The shared Socket.io instance from server.js
     this.pendingActivities = new Map(); // activityId -> resolve function
-
-    this.io.on('connection', (socket) => {
-      console.log(`User socket connected: ${socket.id}`);
-      socket.on('activityResponse', (data) => this.handleResponse(data, socket));
-    });
   }
 
   /**
@@ -21,10 +12,11 @@ class SocketService {
    * @param {object} activityData - Activity details to present.
    * @returns {Promise<string>} - Resolves with "approved" or "rejected".
    */
-  sendApprovalRequest(userId, activityData) {
+  async sendApprovalRequest(userId, activityData) {
+    const { io } = await import('../server.js');
     return new Promise((resolve) => {
       this.pendingActivities.set(activityData._id.toString(), resolve);
-      this.io.to(userId).emit('approvalRequest', activityData);
+      io.to(userId).emit('approvalRequest', activityData);
     });
   }
 
@@ -43,3 +35,4 @@ class SocketService {
 }
 
 export const socketService = new SocketService();
+
